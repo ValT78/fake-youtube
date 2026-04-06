@@ -19,6 +19,10 @@ pub enum AppError {
     MissingYoutubeApiKey,
     #[error("Une erreur est survenue pendant l'appel à l'API YouTube.")]
     YoutubeApiError,
+    #[error("yt-dlp est introuvable. Installe yt-dlp ou définis la variable d'environnement YTDLP_PATH.")]
+    YtDlpUnavailable,
+    #[error("Impossible de résoudre un flux lisible avec yt-dlp. Vérifie que yt-dlp est à jour.")]
+    YtDlpExtractionFailed,
     #[error("VLC est introuvable. Installe VLC ou définis la variable d'environnement VLC_PATH.")]
     VlcUnavailable,
     #[error("Impossible de lancer VLC avec cette vidéo.")]
@@ -43,6 +47,8 @@ impl AppError {
             Self::QuotaExceeded => "quota_exceeded",
             Self::MissingYoutubeApiKey => "missing_youtube_api_key",
             Self::YoutubeApiError => "youtube_api_error",
+            Self::YtDlpUnavailable => "ytdlp_unavailable",
+            Self::YtDlpExtractionFailed => "ytdlp_extraction_failed",
             Self::VlcUnavailable => "vlc_unavailable",
             Self::VlcLaunchFailed => "vlc_launch_failed",
             Self::DatabaseUnavailable => "database_unavailable",

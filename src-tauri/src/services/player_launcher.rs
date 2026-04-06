@@ -5,13 +5,16 @@ use std::process::Command;
 use crate::errors::{AppError, AppResult};
 
 const VLC_PATH_ENV: &str = "VLC_PATH";
+const YTDLP_PATH_ENV: &str = "YTDLP_PATH";
 
 pub fn launch_video_in_vlc(video_id: &str) -> AppResult<()> {
     let vlc_binary = resolve_vlc_binary().ok_or(AppError::VlcUnavailable)?;
+    let ytdlp_binary = resolve_ytdlp_binary().ok_or(AppError::YtDlpUnavailable)?;
     let video_url = build_watch_url(video_id);
+    let stream_url = extract_stream_url(&ytdlp_binary, &video_url)?;
 
     Command::new(&vlc_binary)
-        .arg(video_url)
+        .arg(stream_url)
         .spawn()
         .map(|_| ())
         .map_err(|error| match error.kind() {
@@ -21,7 +24,18 @@ pub fn launch_video_in_vlc(video_id: &str) -> AppResult<()> {
 }
 
 fn resolve_vlc_binary() -> Option<String> {
-    if let Ok(custom_path) = env::var(VLC_PATH_ENV) {
+    resolve_binary_from_env_or_candidates(VLC_PATH_ENV, vlc_candidates())
+}
+
+fn resolve_ytdlp_binary() -> Option<String> {
+    resolve_binary_from_env_or_candidates(YTDLP_PATH_ENV, ytdlp_candidates())
+}
+
+fn resolve_binary_from_env_or_candidates(
+    env_var_name: &str,
+    candidates: &'static [&'static str],
+) -> Option<String> {
+    if let Ok(custom_path) = env::var(env_var_name) {
         let trimmed_path = custom_path.trim();
 
         if !trimmed_path.is_empty() {
@@ -29,7 +43,7 @@ fn resolve_vlc_binary() -> Option<String> {
         }
     }
 
-    for candidate in candidate_binaries() {
+    for candidate in candidates {
         if looks_like_command(candidate) || Path::new(candidate).exists() {
             return Some(candidate.to_string());
         }
@@ -38,7 +52,7 @@ fn resolve_vlc_binary() -> Option<String> {
     None
 }
 
-fn candidate_binaries() -> &'static [&'static str] {
+fn vlc_candidates() -> &'static [&'static str] {
     #[cfg(target_os = "windows")]
     {
         &[
@@ -54,6 +68,22 @@ fn candidate_binaries() -> &'static [&'static str] {
     }
 }
 
+fn ytdlp_candidates() -> &'static [&'static str] {
+    #[cfg(target_os = "windows")]
+    {
+        &[
+            "yt-dlp.exe",
+            "yt-dlp",
+            r"C:\Program Files\yt-dlp\yt-dlp.exe",
+        ]
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        &["yt-dlp", "/usr/bin/yt-dlp", "/usr/local/bin/yt-dlp"]
+    }
+}
+
 fn looks_like_command(candidate: &str) -> bool {
     !candidate.contains(std::path::MAIN_SEPARATOR)
 }
@@ -62,15 +92,71 @@ fn build_watch_url(video_id: &str) -> String {
     format!("https://www.youtube.com/watch?v={video_id}")
 }
 
+fn extract_stream_url(ytdlp_binary: &str, video_url: &str) -> AppResult<String> {
+    let output = Command::new(ytdlp_binary)
+        .args([
+            "--no-playlist",
+            "--no-warnings",
+            "--get-url",
+            "--format",
+            "best[acodec!=none][vcodec!=none]/best",
+            video_url,
+        ])
+        .output()
+        .map_err(|error| match error.kind() {
+            std::io::ErrorKind::NotFound => AppError::YtDlpUnavailable,
+            _ => AppError::YtDlpExtractionFailed,
+        })?;
+
+    if !output.status.success() {
+        return Err(AppError::YtDlpExtractionFailed);
+    }
+
+    parse_first_stream_url(&output.stdout).ok_or(AppError::YtDlpExtractionFailed)
+}
+
+fn parse_first_stream_url(stdout: &[u8]) -> Option<String> {
+    let text = std::str::from_utf8(stdout).ok()?;
+
+    text.lines()
+        .map(str::trim)
+        .find(|line| !line.is_empty() && line.starts_with("http"))
+        .map(ToOwned::to_owned)
+}
+
 #[cfg(test)]
 mod tests {
-    use super::build_watch_url;
+    use super::{build_watch_url, parse_first_stream_url};
 
     #[test]
     fn builds_watch_url_for_vlc() {
         assert_eq!(
             build_watch_url("abc123"),
             "https://www.youtube.com/watch?v=abc123"
+        );
+    }
+
+    #[test]
+    fn extracts_first_stream_url_from_ytdlp_output() {
+        let parsed = parse_first_stream_url(
+            b"https://redirector.googlevideo.com/videoplayback?id=video123\n\n",
+        );
+
+        assert_eq!(
+            parsed.as_deref(),
+            Some("https://redirector.googlevideo.com/videoplayback?id=video123")
+        );
+    }
+
+    #[test]
+    fn ignores_non_http_lines_when_parsing_ytdlp_output() {
+        let parsed = parse_first_stream_url(
+            b"[youtube] Extracting URL\nhttps://redirector.googlevideo.com/videoplayback?id=video123\n",
+        );
+
+        assert_eq!(
+            parsed.as_deref(),
+            Some("https://redirector.googlevideo.com/videoplayback?id=video123")
         );
     }
 }
