@@ -54,13 +54,6 @@ export function PlaylistHomeView({
       </section>
 
       <AddPlaylistForm busy={importBusy} onSubmit={onImport} />
-      <AppConfigForm
-        busy={configBusy}
-        config={appConfig}
-        configPath={configPath}
-        configSource={configSource}
-        onSubmit={onSaveConfig}
-      />
 
       {error ? <div className="banner banner-error">{error}</div> : null}
       {successMessage ? (
@@ -74,6 +67,13 @@ export function PlaylistHomeView({
       ) : (
         <PlaylistList playlists={playlists} onOpenPlaylist={onOpenPlaylist} />
       )}
+      <AppConfigForm
+        busy={configBusy}
+        config={appConfig}
+        configPath={configPath}
+        configSource={configSource}
+        onSubmit={onSaveConfig}
+      />
     </main>
   );
 }
