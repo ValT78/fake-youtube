@@ -1,3 +1,4 @@
+pub mod app_config;
 pub mod player_launcher;
 pub mod playlist_parser;
 pub mod sync;

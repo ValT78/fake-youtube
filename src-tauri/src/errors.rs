@@ -15,7 +15,7 @@ pub enum AppError {
     PlaylistInaccessible,
     #[error("Le quota de l'API YouTube est dépassé ou l'accès a été refusé.")]
     QuotaExceeded,
-    #[error("La variable d'environnement YOUTUBE_API_KEY est requise pour importer une playlist.")]
+    #[error("La clé YouTube API est requise pour importer une playlist. Renseigne-la dans le fichier JSON de configuration.")]
     MissingYoutubeApiKey,
     #[error("Une erreur est survenue pendant l'appel à l'API YouTube.")]
     YoutubeApiError,
@@ -27,6 +27,12 @@ pub enum AppError {
     VlcUnavailable,
     #[error("Impossible de lancer VLC avec cette vidéo.")]
     VlcLaunchFailed,
+    #[error("Impossible de déterminer où stocker le fichier JSON de configuration.")]
+    ConfigPathUnavailable,
+    #[error("Impossible de lire le fichier JSON de configuration.")]
+    ConfigReadFailed,
+    #[error("Impossible d'enregistrer le fichier JSON de configuration.")]
+    ConfigWriteFailed,
     #[error("La base locale SQLite est indisponible.")]
     DatabaseUnavailable,
     #[error("{0}")]
@@ -51,6 +57,9 @@ impl AppError {
             Self::YtDlpExtractionFailed => "ytdlp_extraction_failed",
             Self::VlcUnavailable => "vlc_unavailable",
             Self::VlcLaunchFailed => "vlc_launch_failed",
+            Self::ConfigPathUnavailable => "config_path_unavailable",
+            Self::ConfigReadFailed => "config_read_failed",
+            Self::ConfigWriteFailed => "config_write_failed",
             Self::DatabaseUnavailable => "database_unavailable",
             Self::Internal(_) => "internal",
         }
@@ -105,7 +114,7 @@ mod tests {
         assert_eq!(json["kind"], "missing_youtube_api_key");
         assert_eq!(
             json["message"],
-            "La variable d'environnement YOUTUBE_API_KEY est requise pour importer une playlist."
+            "La clé YouTube API est requise pour importer une playlist. Renseigne-la dans le fichier JSON de configuration."
         );
     }
 }

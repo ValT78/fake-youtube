@@ -1,15 +1,21 @@
 import { AddPlaylistForm } from "./components/AddPlaylistForm";
+import { AppConfigForm } from "./components/AppConfigForm";
 import { PlaylistList } from "./components/PlaylistList";
-import type { PlaylistSummary } from "../../lib/types";
+import type { AppConfig, PlaylistSummary } from "../../lib/types";
 
 interface PlaylistHomeViewProps {
   playlists: PlaylistSummary[];
   busy: boolean;
   importBusy: boolean;
+  configBusy: boolean;
   databasePath: string | null;
+  appConfig: AppConfig;
+  configPath: string | null;
+  configSource: string | null;
   error: string | null;
   successMessage: string | null;
   onImport: (url: string) => Promise<void>;
+  onSaveConfig: (config: AppConfig) => Promise<void>;
   onOpenPlaylist: (playlistId: string) => void;
 }
 
@@ -17,10 +23,15 @@ export function PlaylistHomeView({
   playlists,
   busy,
   importBusy,
+  configBusy,
   databasePath,
+  appConfig,
+  configPath,
+  configSource,
   error,
   successMessage,
   onImport,
+  onSaveConfig,
   onOpenPlaylist,
 }: PlaylistHomeViewProps) {
   return (
@@ -43,6 +54,13 @@ export function PlaylistHomeView({
       </section>
 
       <AddPlaylistForm busy={importBusy} onSubmit={onImport} />
+      <AppConfigForm
+        busy={configBusy}
+        config={appConfig}
+        configPath={configPath}
+        configSource={configSource}
+        onSubmit={onSaveConfig}
+      />
 
       {error ? <div className="banner banner-error">{error}</div> : null}
       {successMessage ? (

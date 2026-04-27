@@ -48,31 +48,31 @@ Si Rust n'est pas encore installé :
 curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal
 ```
 
-## Variables d'environnement
+## Configuration JSON
 
-Créer un shell avec la variable suivante avant de lancer Tauri :
+L'application utilise désormais un fichier `playlist-browser.config.json`.
 
-```bash
-export YOUTUBE_API_KEY="votre_cle_youtube_data_api_v3"
+Exemple :
+
+```json
+{
+  "youtubeApiKey": "AIza...",
+  "vlcPath": "C:\\Program Files\\VideoLAN\\VLC\\vlc.exe",
+  "ytdlpPath": "C:\\tools\\yt-dlp\\yt-dlp.exe"
+}
 ```
 
-L'import réel d'une playlist dépend de cette clé. Sans elle, l'application renvoie un message d'erreur explicite.
+Un modèle est fourni dans `playlist-browser.config.example.json`.
 
-Variable optionnelle pour forcer le binaire VLC :
+Ordre de priorité :
 
-```bash
-export VLC_PATH="/chemin/vers/vlc"
-```
+1. fichier `playlist-browser.config.json` placé à côté du `.exe`
+2. fichier enregistré par l'application dans son dossier de configuration local
+3. anciennes variables d'environnement `YOUTUBE_API_KEY`, `VLC_PATH`, `YTDLP_PATH` en fallback
 
-Utilise `VLC_PATH` si `vlc` n'est pas présent dans le `PATH` du shell qui lance Tauri.
+Tu peux aussi modifier cette configuration directement depuis l'écran d'accueil. L'app affiche le chemin exact du JSON utilisé.
 
-Variable optionnelle pour forcer le binaire `yt-dlp` :
-
-```bash
-export YTDLP_PATH="/chemin/vers/yt-dlp"
-```
-
-Utilise `YTDLP_PATH` si `yt-dlp` n'est pas présent dans le `PATH` du shell qui lance Tauri.
+Pour `vlcPath` et `ytdlpPath`, laisse la valeur vide si l'auto-détection suffit.
 
 ## Lancement en développement
 
@@ -257,12 +257,15 @@ where.exe yt-dlp
 
 Si `vlc` ou `yt-dlp` ne sont pas trouvés, tu peux forcer leurs chemins :
 
-```powershell
-$env:VLC_PATH="C:\Program Files\VideoLAN\VLC\vlc.exe"
-$env:YTDLP_PATH="C:\chemin\vers\yt-dlp.exe"
+```json
+{
+  "youtubeApiKey": "AIza...",
+  "vlcPath": "C:\\Program Files\\VideoLAN\\VLC\\vlc.exe",
+  "ytdlpPath": "C:\\chemin\\vers\\yt-dlp.exe"
+}
 ```
 
-Tu peux aussi définir ces variables au niveau utilisateur dans Windows si tu veux lancer l'app packagée sans ouvrir PowerShell au préalable.
+Tu peux placer ce fichier à côté du `.exe` pour une configuration portable.
 
 ### Lancer en développement sur Windows
 
@@ -270,7 +273,6 @@ Depuis une session PowerShell ouverte dans le dépôt :
 
 ```powershell
 npm install
-$env:YOUTUBE_API_KEY="votre_cle"
 npm run dev
 ```
 
@@ -292,7 +294,6 @@ Toujours depuis Windows natif :
 
 ```powershell
 npm install
-$env:YOUTUBE_API_KEY="votre_cle"
 npm run tauri:build
 ```
 
@@ -310,15 +311,11 @@ Pour vérifier qu'une build installée retrouve bien VLC et `yt-dlp`, je te cons
 
 1. installer VLC normalement
 2. installer `yt-dlp` via `winget`
-3. ouvrir une nouvelle session Windows
-4. installer puis lancer l'application packagée
+3. préparer un `playlist-browser.config.json`
+4. le placer à côté du `.exe` si tu veux transporter la config avec l'app
+5. installer puis lancer l'application packagée
 
-Si la build ne trouve pas l'un des deux outils, le plus simple pour le diagnostic est de relancer l'application depuis un terminal PowerShell avec :
-
-```powershell
-$env:VLC_PATH="C:\Program Files\VideoLAN\VLC\vlc.exe"
-$env:YTDLP_PATH="C:\chemin\vers\yt-dlp.exe"
-```
+Si la build ne trouve pas l'un des deux outils, renseigne leurs chemins absolus dans le JSON.
 
 ### Limite actuelle de cette approche
 

@@ -1,4 +1,6 @@
 import type {
+  AppConfig,
+  AppConfigPayload,
   DatabaseStatus,
   ImportPlaylistResult,
   ParsedPlaylistUrl,
@@ -31,6 +33,16 @@ export async function getPlaylistDetail(
 
 export async function getDatabaseStatus(): Promise<DatabaseStatus> {
   return invokeTauri("database_status");
+}
+
+export async function getAppConfig(): Promise<AppConfigPayload> {
+  return invokeTauri("get_app_config");
+}
+
+export async function saveAppConfig(
+  config: AppConfig,
+): Promise<AppConfigPayload> {
+  return invokeTauri("save_app_config", { config });
 }
 
 export async function openVideoInVlc(videoId: string): Promise<void> {

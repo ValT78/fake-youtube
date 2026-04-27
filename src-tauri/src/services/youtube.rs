@@ -1,12 +1,13 @@
 use std::collections::{HashMap, HashSet};
-use std::env;
 
 use reqwest::{Client, StatusCode};
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
+use tauri::AppHandle;
 
 use crate::{
     errors::{AppError, AppResult},
+    services::app_config::load_app_config,
 };
 
 const YOUTUBE_API_BASE_URL: &str = "https://www.googleapis.com/youtube/v3";
@@ -48,9 +49,13 @@ pub struct YoutubeService {
 }
 
 impl YoutubeService {
-    pub fn new_from_env() -> AppResult<Self> {
-        let api_key =
-            env::var("YOUTUBE_API_KEY").map_err(|_| AppError::MissingYoutubeApiKey)?;
+    pub fn new(app: &AppHandle) -> AppResult<Self> {
+        let config = load_app_config(app)?;
+        let api_key = config
+            .config
+            .youtube_api_key()
+            .ok_or(AppError::MissingYoutubeApiKey)?
+            .to_string();
 
         Ok(Self {
             api_key,
@@ -531,4 +536,3 @@ mod tests {
         assert_eq!(mapped.position, 2);
     }
 }
-

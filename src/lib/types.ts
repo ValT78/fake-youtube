@@ -8,6 +8,18 @@ export interface DatabaseStatus {
   databasePath: string;
 }
 
+export interface AppConfig {
+  youtubeApiKey: string;
+  vlcPath: string;
+  ytdlpPath: string;
+}
+
+export interface AppConfigPayload {
+  config: AppConfig;
+  configPath: string;
+  configSource: string;
+}
+
 export interface ParsedPlaylistUrl {
   originalUrl: string;
   canonicalUrl: string;
@@ -51,4 +63,3 @@ export interface ImportPlaylistResult {
   importedVideoCount: number;
   source: "api";
 }
-

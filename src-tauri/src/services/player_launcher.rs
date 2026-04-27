@@ -1,15 +1,16 @@
-use std::env;
 use std::path::Path;
 use std::process::Command;
 
+use tauri::AppHandle;
+
 use crate::errors::{AppError, AppResult};
+use crate::services::app_config::load_app_config;
 
-const VLC_PATH_ENV: &str = "VLC_PATH";
-const YTDLP_PATH_ENV: &str = "YTDLP_PATH";
-
-pub fn launch_video_in_vlc(video_id: &str) -> AppResult<()> {
-    let vlc_binary = resolve_vlc_binary().ok_or(AppError::VlcUnavailable)?;
-    let ytdlp_binary = resolve_ytdlp_binary().ok_or(AppError::YtDlpUnavailable)?;
+pub fn launch_video_in_vlc(app: &AppHandle, video_id: &str) -> AppResult<()> {
+    let app_config = load_app_config(app)?.config;
+    let vlc_binary = resolve_vlc_binary(app_config.vlc_path()).ok_or(AppError::VlcUnavailable)?;
+    let ytdlp_binary =
+        resolve_ytdlp_binary(app_config.ytdlp_path()).ok_or(AppError::YtDlpUnavailable)?;
     let video_url = build_watch_url(video_id);
     let stream_url = extract_stream_url(&ytdlp_binary, &video_url)?;
 
@@ -23,23 +24,18 @@ pub fn launch_video_in_vlc(video_id: &str) -> AppResult<()> {
         })
 }
 
-fn resolve_vlc_binary() -> Option<String> {
-    resolve_binary_from_env_or_candidates(VLC_PATH_ENV, vlc_candidates())
+fn resolve_vlc_binary(custom_path: Option<&str>) -> Option<String> {
+    resolve_binary(custom_path, vlc_candidates())
 }
 
-fn resolve_ytdlp_binary() -> Option<String> {
-    resolve_binary_from_env_or_candidates(YTDLP_PATH_ENV, ytdlp_candidates())
+fn resolve_ytdlp_binary(custom_path: Option<&str>) -> Option<String> {
+    resolve_binary(custom_path, ytdlp_candidates())
 }
 
-fn resolve_binary_from_env_or_candidates(
-    env_var_name: &str,
-    candidates: &'static [&'static str],
-) -> Option<String> {
-    if let Ok(custom_path) = env::var(env_var_name) {
-        let trimmed_path = custom_path.trim();
-
-        if !trimmed_path.is_empty() {
-            return Some(trimmed_path.to_string());
+fn resolve_binary(custom_path: Option<&str>, candidates: &'static [&'static str]) -> Option<String> {
+    if let Some(path) = custom_path {
+        if !path.trim().is_empty() {
+            return Some(path.to_string());
         }
     }
 

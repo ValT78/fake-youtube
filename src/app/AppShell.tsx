@@ -4,12 +4,14 @@ import { PlaylistHomeView } from "../features/playlists/PlaylistHomeView";
 import { ensureLocalDatabase } from "../lib/db";
 import { toErrorMessage } from "../lib/errors";
 import {
+  getAppConfig,
   getDatabaseStatus,
   importPlaylist,
   listPlaylists,
   parsePlaylistUrl,
+  saveAppConfig,
 } from "../lib/tauri";
-import type { PlaylistSummary } from "../lib/types";
+import type { AppConfig, PlaylistSummary } from "../lib/types";
 
 type Route =
   | {
@@ -24,8 +26,16 @@ export function AppShell() {
   const [route, setRoute] = useState<Route>({ name: "home" });
   const [playlists, setPlaylists] = useState<PlaylistSummary[]>([]);
   const [databasePath, setDatabasePath] = useState<string | null>(null);
+  const [appConfig, setAppConfig] = useState<AppConfig>({
+    youtubeApiKey: "",
+    vlcPath: "",
+    ytdlpPath: "",
+  });
+  const [configPath, setConfigPath] = useState<string | null>(null);
+  const [configSource, setConfigSource] = useState<string | null>(null);
   const [loadingPlaylists, setLoadingPlaylists] = useState(true);
   const [importBusy, setImportBusy] = useState(false);
+  const [configBusy, setConfigBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -40,8 +50,12 @@ export function AppShell() {
     try {
       await ensureLocalDatabase();
       const databaseStatus = await getDatabaseStatus();
+      const currentAppConfig = await getAppConfig();
       const storedPlaylists = await listPlaylists();
       setDatabasePath(databaseStatus.databasePath);
+      setAppConfig(currentAppConfig.config);
+      setConfigPath(currentAppConfig.configPath);
+      setConfigSource(currentAppConfig.configSource);
       setPlaylists(storedPlaylists);
     } catch (nextError) {
       setError(toErrorMessage(nextError));
@@ -70,6 +84,24 @@ export function AppShell() {
     }
   }
 
+  async function handleSaveConfig(config: AppConfig): Promise<void> {
+    setConfigBusy(true);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      const saved = await saveAppConfig(config);
+      setAppConfig(saved.config);
+      setConfigPath(saved.configPath);
+      setConfigSource(saved.configSource);
+      setSuccessMessage(`Configuration enregistrée dans ${saved.configPath}.`);
+    } catch (nextError) {
+      setError(toErrorMessage(nextError));
+    } finally {
+      setConfigBusy(false);
+    }
+  }
+
   if (route.name === "playlist") {
     return (
       <PlaylistDetailView
@@ -85,10 +117,15 @@ export function AppShell() {
       playlists={playlists}
       busy={loadingPlaylists}
       importBusy={importBusy}
+      configBusy={configBusy}
       databasePath={databasePath}
+      appConfig={appConfig}
+      configPath={configPath}
+      configSource={configSource}
       error={error}
       successMessage={successMessage}
       onImport={handleImport}
+      onSaveConfig={handleSaveConfig}
       onOpenPlaylist={(playlistId) => setRoute({ name: "playlist", playlistId })}
     />
   );

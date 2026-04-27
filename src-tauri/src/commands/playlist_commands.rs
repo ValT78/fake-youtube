@@ -20,7 +20,7 @@ pub fn parse_playlist_url(source_url: String) -> AppResult<ParsedPlaylistUrl> {
 #[tauri::command]
 pub async fn import_playlist(app: AppHandle, source_url: String) -> AppResult<ImportPlaylistResult> {
     let parsed = parse_playlist_reference(&source_url)?;
-    let youtube = YoutubeService::new_from_env()?;
+    let youtube = YoutubeService::new(&app)?;
     let playlist_bundle = youtube.fetch_playlist_bundle(&parsed.playlist_id).await?;
     let payload = build_import_payload(&parsed.canonical_url, playlist_bundle);
     let playlist = payload.playlist.clone();
@@ -46,6 +46,6 @@ pub async fn get_playlist_detail(app: AppHandle, playlist_id: String) -> AppResu
 }
 
 #[tauri::command]
-pub fn open_video_in_vlc(video_id: String) -> AppResult<()> {
-    launch_video_in_vlc(&video_id)
+pub fn open_video_in_vlc(app: AppHandle, video_id: String) -> AppResult<()> {
+    launch_video_in_vlc(&app, &video_id)
 }

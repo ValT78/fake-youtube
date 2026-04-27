@@ -4,6 +4,7 @@ mod errors;
 mod models;
 mod services;
 
+use commands::config_commands::{get_app_config, save_app_config};
 use commands::db_commands::database_status;
 use commands::playlist_commands::{
     get_playlist_detail, import_playlist, list_playlists, open_video_in_vlc,
@@ -20,6 +21,8 @@ pub fn run() {
                 .build(),
         )
         .invoke_handler(tauri::generate_handler![
+            get_app_config,
+            save_app_config,
             parse_playlist_url,
             import_playlist,
             list_playlists,

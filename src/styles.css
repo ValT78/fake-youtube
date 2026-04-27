@@ -142,6 +142,10 @@ code {
   background: #ffffff;
 }
 
+.input[type="text"] {
+  width: 100%;
+}
+
 .button {
   border: none;
   border-radius: 16px;
